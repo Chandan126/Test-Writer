@@ -1,0 +1,19 @@
+[MASTER]
+init-hook='import sys; sys.path.append(".")'
+
+[FORMAT]
+max-line-length=120
+
+[DESIGN]
+max-args=10
+max-attributes=15
+max-public-methods=25
+
+[TYPECHECK]
+ignored-modules=boto3,botocore
+
+[VARIABLES]
+init-import=no
+
+[IMPORTS]
+ignored-modules=boto3,botocore
