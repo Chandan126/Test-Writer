@@ -26,6 +26,16 @@ services:
     networks:
       - app-network
 
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - app-network
+    container_name: ollama
+
   backend:
     build: .
     ports:
@@ -39,6 +49,7 @@ services:
     depends_on:
       - postgres
       - minio
+      - ollama
     volumes:
       - ./app:/app/app
     networks:
@@ -55,6 +66,7 @@ services:
 volumes:
   postgres_data:
   minio_data:
+  ollama_data:
 
 networks:
   app-network:

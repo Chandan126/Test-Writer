@@ -2,6 +2,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 from app.db.base_class import Base
+from app.models.file import File  # Import to ensure table is created
+from app.models.file_content import FileContent  # Import to ensure table is created
 
 # Create engine with PostgreSQL-specific settings
 engine = create_engine(

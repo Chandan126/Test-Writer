@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime, BigInteger
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 from app.db.base_class import Base
 
 
@@ -12,5 +13,9 @@ class File(Base):
     file_size = Column(BigInteger, nullable=False)  # File size in bytes
     content_type = Column(String(100), nullable=False)  # MIME type
     s3_key = Column(String(500), nullable=False, unique=True, index=True)  # S3 object key
+    processing_status = Column(String(50), nullable=False, default="pending")  # pending/processing/completed/failed
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Relationship to FileContent table
+    contents = relationship("FileContent", back_populates="file", cascade="all, delete-orphan")

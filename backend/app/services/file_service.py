@@ -6,6 +6,7 @@ from app.core.file_utils import file_processor
 from app.crud.file import file as file_crud
 from app.schemas.file import FileCreate, FileMetadata
 from app.models.file import File
+from app.services.file_extraction_service import content_extraction_service
 
 
 class FileService:
@@ -135,6 +136,12 @@ class FileService:
             return False
         
         return self.s3_client.file_exists(db_file.s3_key)
+    
+    async def extract_content(self, db: Session, file_id: int) -> Optional[str]:
+        """
+        Extract content from file using content extraction service
+        """
+        return await content_extraction_service.extract_content_from_file(db, file_id)
 
 
 # Global file service instance

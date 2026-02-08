@@ -1,5 +1,6 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File as FastAPIFile, Query
+import logging
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from app.db.session import get_db
@@ -8,6 +9,7 @@ from app.schemas.file import FileMetadata, FileList
 import io
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @router.post("/upload", response_model=FileMetadata)
@@ -18,13 +20,22 @@ async def upload_file(
     """
     Upload a file to S3 and save metadata to database
     """
+    db_file = await file_service.upload_file(db, file)
+        
+    # Trigger automatic OCR extraction in background
     try:
-        db_file = await file_service.upload_file(db, file)
-        return FileMetadata.from_orm(db_file)
-    except HTTPException:
-        raise
+        logger.info(f"Extraction started for file {db_file.id}")
+        import asyncio
+        asyncio.create_task(file_service.extract_content(db, db_file.id))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+        # Log error but don't fail the upload
+        logging.error(f"Failed to trigger OCR extraction for file {db_file.id}: {e}")
+        
+    return FileMetadata.from_orm(db_file)
+    #except HTTPException:
+    #    raise
+    #except Exception as e:
+    #    raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
 
 @router.get("/{file_id}/download")
@@ -140,3 +151,29 @@ async def check_file_exists(
         return {"file_id": file_id, "exists": exists}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to check file existence: {str(e)}")
+
+
+@router.post("/{file_id}/extract", response_model=dict)
+async def extract_file_content(
+    file_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Extract content from file using LangGraph OCR system
+    """
+    try:
+        content = await file_service.extract_content(db, file_id)
+        if content:
+            return {
+                "file_id": file_id,
+                "content": content,
+                "status": "completed"
+            }
+        else:
+            return {
+                "file_id": file_id,
+                "content": "",
+                "status": "failed"
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to extract content: {str(e)}")

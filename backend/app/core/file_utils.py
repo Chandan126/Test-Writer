@@ -95,6 +95,12 @@ class FileProcessor:
         # Read file content
         file_content = await file.read()
         file_size = len(file_content)
+
+        if file_size > settings.MAX_FILE_SIZE:
+            raise HTTPException(
+            status_code=400,
+            detail=f"File size exceeds maximum allowed size of {settings.MAX_FILE_SIZE} bytes"
+        )
         
         # Get content type
         content_type = self.validator.get_content_type(file.filename)

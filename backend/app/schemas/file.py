@@ -24,6 +24,7 @@ class File(FileBase):
     filename: str
     file_size: int
     s3_key: str
+    processing_status: str
     created_at: datetime
     updated_at: Optional[datetime] = None
     
@@ -39,6 +40,7 @@ class FileMetadata(BaseModel):
     file_size: int
     content_type: str
     s3_key: str
+    processing_status: str
     created_at: datetime
     updated_at: Optional[datetime] = None
     
