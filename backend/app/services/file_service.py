@@ -7,6 +7,9 @@ from app.crud.file import file as file_crud
 from app.schemas.file import FileCreate, FileMetadata
 from app.models.file import File
 from app.services.file_extraction_service import content_extraction_service
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class FileService:
@@ -142,6 +145,40 @@ class FileService:
         Extract content from file using content extraction service
         """
         return await content_extraction_service.extract_content_from_file(db, file_id)
+    
+    async def extract_content_with_test_writer(self, db: Session, file_id: int) -> Optional[str]:
+        """
+        Extract content from file and automatically start test writer pipeline
+        """
+        try:
+            # First extract content
+            extracted_content = await content_extraction_service.extract_content_from_file(db, file_id)
+            
+            if extracted_content:
+                # Wait a moment to ensure content is saved to database
+                import asyncio
+                await asyncio.sleep(2)
+                
+                # Import and start test writer pipeline
+                from app.services.test_writer_pipeline import test_writer_pipeline_service
+                
+                pipeline_id = test_writer_pipeline_service.create_pipeline(file_id)
+                
+                # Start pipeline execution in background (non-blocking)
+                asyncio.create_task(
+                    test_writer_pipeline_service.execute_pipeline,
+                    pipeline_id,
+                    db
+                )
+                
+                logger.info(f"🚀 Auto-started test writer pipeline {pipeline_id} for file {file_id}")
+                
+            return extracted_content
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to start test writer pipeline for file {file_id}: {e}")
+            # Still return extracted content even if pipeline fails
+            return await content_extraction_service.extract_content_from_file(db, file_id)
 
 
 # Global file service instance
